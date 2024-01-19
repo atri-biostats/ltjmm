@@ -6,7 +6,7 @@ Diseases that progress over long periods of time are often studied by observing 
 
 ```r
 install.packages("devtools")
-devtools::install_github("atrihub/ltjmm")
+devtools::install_github("atrihub/ltjmm", build_vignettes = TRUE)
 ```
 
 ## Model details
