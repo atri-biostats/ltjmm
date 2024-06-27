@@ -7,7 +7,9 @@
 #' @param lt logical, indicating whether or not latent time effect should be included.
 #' @param random_effects character specifying distribution for random intercepts and slopes. Option 'univariate' 
 #' specifies that random intercepts and slopes for each outcome follow univariate independent normal distributions.
-#' Option 'multivariate' specifies that random intercepts and slopes follow a single mutilvariate normal distribution.)
+#' Option 'multivariate' specifies that random intercepts and slopes follow a single multivariate normal distribution.
+#' Option 'multivariate_no_constraint' with \code{lt=TRUE} relaxes the sum-to-zero constraint described in
+#' Li et al. 2017.
 #' @param data data.frame containing the variables in the model.
 #' @param subset an optional vector specifying a subset of observations to be used in the fitting process.
 #' @param na.action a function which indicates what should happen when the data contain NAs.
@@ -21,6 +23,8 @@ ltjmm_stan <- function(formula, lt=TRUE, random_effects='univariate', data, subs
     instantiate::stan_package_model(name = "ltjmm", package = "ltjmm")
   if(lt & random_effects == 'multivariate') mod <- 
     instantiate::stan_package_model(name = "ltjmm_mvnorm_ranef", package = "ltjmm")
+  if(lt & random_effects == 'multivariate_no_constraint') mod <- 
+    instantiate::stan_package_model(name = "ltjmm_mvnorm_ranef_no_constraint", package = "ltjmm")
   if(!lt & random_effects == 'univariate') mod <- 
     instantiate::stan_package_model(name = "mm", package = "ltjmm")
   if(!lt & random_effects == 'multivariate') mod <- 
