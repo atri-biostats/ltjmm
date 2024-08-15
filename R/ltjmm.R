@@ -81,10 +81,9 @@ ltjmm <- function(formula, data, subset, na.action){
 #' 
 #' @aliases predict.ltjmm
 #' @param object a \code{\link[ltjmm]{ltjmm}} object
-#' @param stanfit.object a corresponding \code{\link[rstan]{stanfit}} object
+#' @param stanfit.object a corresponding \code{\link[cmdstanr]{CmdStanMCMC}} object
 #' @param newdata new data on which to generate predictions
 #' @param link link function (defaults to identity)
-#' @param chains number of MCMC chains.
 #' @param level for credible intervals
 #' @param grouping character indicating whether 'population' or 'subject' level precictions
 #' are desired.
@@ -92,9 +91,9 @@ ltjmm <- function(formula, data, subset, na.action){
 #' @seealso \code{\link[ltjmm]{ltjmm}}
 #' @method predict ltjmm
 #' @export 
-predict.ltjmm <- function(object, stanfit.object, newdata, link, chains = NULL, level = 0.95,
+predict.ltjmm <- function(object, stanfit.object, newdata, link, level = 0.95,
                           grouping = c('population', 'subject')[1], ...){
-  pd <- setup.predict.ltjmm(object, stanfit.object, newdata, link, chains, level)
+  pd <- setup.predict.ltjmm(object, stanfit.object, newdata, link, level)
   X <- pd$data$X
   obs_time <- pd$data$obs_time
   unq_time <- pd$data$unq_time
@@ -142,14 +141,13 @@ predict.ltjmm <- function(object, stanfit.object, newdata, link, chains = NULL, 
 #' Create design matrices and extract parameter estimates to obtain predictions and confidence intervals for LTJMMs
 #' 
 #' @param object a \code{\link[ltjmm]{ltjmm}} object
-#' @param stanfit.object a corresponding \code{\link[rstan]{stanfit}} object
+#' @param stanfit.object a corresponding \code{\link[cmdstanr]{CmdStanMCMC}} object
 #' @param newdata new data on which to generate predictions
 #' @param link link function (defaults to identity)
-#' @param chains number of MCMC chains.
 #' @param level for credible intervals
 #' @seealso \code{\link[ltjmm]{ltjmm}}
 #' @export
-setup.predict.ltjmm <- function(object, stanfit.object, newdata, link, chains = NULL, level = 0.95){
+setup.predict.ltjmm <- function(object, stanfit.object, newdata, link, level = 0.95){
   if (missing(newdata) || is.null(newdata)){
     data <- object$data
   }else{
@@ -158,34 +156,20 @@ setup.predict.ltjmm <- function(object, stanfit.object, newdata, link, chains = 
   if (missing(link) || is.null(link)) {
     link <- function(x) x
   }
+ 
+  Beta <- as.matrix(posterior::as_draws_matrix(fit$draws("beta")))
+  Gamma <- as.matrix(posterior::as_draws_matrix(fit$draws("gamma")))
+  Delta <- as.matrix(posterior::as_draws_matrix(fit$draws("delta")))
+  Alpha0 <- as.matrix(posterior::as_draws_matrix(fit$draws("alpha0")))
+  Alpha1 <- as.matrix(posterior::as_draws_matrix(fit$draws("alpha1")))
   
-  # assuming all chains have same structure:
-  chain <- 1
-  all_names <- names(stanfit.object@sim$samples[[chain]])
-  thin <- stanfit.object@stan_args[[chain]]$thin
-  s0 <- stanfit.object@stan_args[[chain]]$warmup/thin + 1
-  s1 <- stanfit.object@stan_args[[chain]]$iter/thin
-  
-  beta_names <- all_names[grepl('beta', all_names)]
-  gamma_names <- all_names[grepl('gamma', all_names)]
-  delta_names <- all_names[grepl('delta', all_names)]
-  delta_names <- delta_names[-length(delta_names)]
-  alpha0_names <- all_names[(grepl('alpha0', all_names)) & !(grepl('sigma_alpha0', all_names))]
-  alpha1_names <- all_names[(grepl('alpha1', all_names)) & !(grepl('sigma_alpha1', all_names))]
-  
-  samples.array <- as.array(stanfit.object)
-  if(is.null(chains)){
-    chains <- 1:dim(samples.array)[2]
-  }
-  samples.matrix <- do.call(rbind, lapply(chains, function(chain) samples.array[,chain,]))
-  
-  samples <- lapply(1:nrow(samples.matrix), function(samp){
+  samples <- lapply(1:nrow(Beta), function(samp){
     list(
-      beta = matrix(samples.matrix[samp, beta_names], nrow = data$N_out, ncol = data$N_X),
-      gamma = matrix(samples.matrix[samp, gamma_names], nrow = data$N_out, ncol = 1),
-      delta = matrix(samples.matrix[samp, delta_names], nrow = data$N_sub, ncol = 1),
-      alpha0 = matrix(samples.matrix[samp, alpha0_names], nrow = data$N_sub, ncol = data$N_out),
-      alpha1 = matrix(samples.matrix[samp, alpha1_names], nrow = data$N_sub, ncol = data$N_out)
+     beta = matrix(Beta[samp, ], nrow = data$N_out, ncol = data$N_X),
+     gamma = matrix(Gamma[samp, ], nrow = data$N_out, ncol = 1),
+     delta = matrix(Delta[samp, ], nrow = data$N_sub, ncol = 1),
+     alpha0 = matrix(Alpha0[samp, ], nrow = data$N_sub, ncol = data$N_out),
+     alpha1 = matrix(Alpha1[samp, ], nrow = data$N_sub, ncol = data$N_out)
     )
   })
   return(list(samples = samples, data = data, link = link))
