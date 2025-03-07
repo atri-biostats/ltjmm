@@ -142,7 +142,7 @@ save(fit.sum, draws.beta, draws.gamma, draws.sigma_delta,
 ```
 
 ```{r loadResults}
-load('sim_results.rdata')
+load(system.file("testdata", "sim_results.rdata", package="ltjmm"))
 ```
 
 ## Diagnostic plots
@@ -285,7 +285,7 @@ save(fit.sum, draws.beta, draws.gamma, draws.sigma_delta,
 ```
 
 ```{r loadResultsMulti}
-load('sim_lt_multi_results.rdata')
+load(system.file("testdata", "sim_lt_multi_results.rdata", package="ltjmm"))
 ```
 
 ## Diagnostic plots
@@ -353,7 +353,7 @@ save(fit.sum, draws.beta, draws.gamma,
 ```
 
 ```{r loadResultsJMM}
-load('sim_jmm_results.rdata')
+load(system.file("testdata", "sim_jmm_results.rdata", package="ltjmm"))
 ```
 
 ## Diagnostic plots
@@ -403,7 +403,7 @@ save(fit.sum, draws.beta, draws.gamma,
 ```
 
 ```{r loadResultsMM}
-load("sim_mm_results.rdata")
+load(system.file("testdata", "sim_mm_results.rdata", package="ltjmm"))
 ```
 
 ## Diagnostic plots
