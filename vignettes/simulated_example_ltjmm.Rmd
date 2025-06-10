@@ -240,18 +240,18 @@ dd <- dd %>%
 
 ```{r, fig.cap='Model predictions and observations on the original scale relative to estimated time shifts.'}
 ggplot(filter(nd, scale == 'Y'), aes(x=`year+delta`, y=median)) +
-  geom_line(aes(color = Outcome)) +
+  geom_line() +
   facet_wrap(~Outcome) +
-  geom_ribbon(aes(ymin=lower.CL, ymax=upper.CL, fill=Outcome), alpha=0.2) +
+  geom_ribbon(aes(ymin=lower.CL, ymax=upper.CL), alpha=0.2, fill='blue') +
   geom_point(data = dd, aes(x = year + delta_hat, y = Y), alpha = 0.01) +
   ylab('Y')
 ```
 
 ```{r, fig.cap='Model predictions and observations on the quantile scale relative to estimated time shifts.'}
 ggplot(filter(nd, scale == 'Q'), aes(x=`year+delta`, y=median)) +
-  geom_line(aes(color = Outcome)) +
+  geom_line() +
   facet_wrap(~Outcome) +
-  geom_ribbon(aes(ymin=lower.CL, ymax=upper.CL, fill=Outcome), alpha=0.2) +
+  geom_ribbon(aes(ymin=lower.CL, ymax=upper.CL), alpha=0.2, fill='blue') +
   geom_point(data = dd, aes(x = year + delta_hat, y = Q), alpha = 0.01) +
   ylab('Q')
 ```
@@ -260,7 +260,8 @@ ggplot(filter(nd, scale == 'Q'), aes(x=`year+delta`, y=median)) +
 ggplot(filter(nd, scale == 'Q'), aes(x=`year+delta`, y=median)) +
   geom_line(aes(color = Outcome)) +
   geom_ribbon(aes(ymin=lower.CL, ymax=upper.CL, fill=Outcome), alpha=0.2) +
-  ylab('Q')
+  ylab('Q') +
+  theme(legend.position = 'inside', legend.position.inside = c(0.8, 0.2))
 ```
 
 # Fit LTJMM with multivariate random effects with Stan
