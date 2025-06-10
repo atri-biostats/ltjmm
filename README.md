@@ -2,7 +2,11 @@
 
 Diseases that progress over long periods of time are often studied by observing cohorts at different stages of disease for shorter periods of time. We apply MCMC sampling to estimate Latent Time Joint Mixed Effect Models (LTJMM) from short-term observations with unknown relative observation times. The LTJMM is described in [Li, et al. (2017)](https://doi.org/10.1177/0962280217737566). 
 
-## To install, from an R prompt:
+## Installing `ltjmm`
+
+The `ltjmm` package requires `CmdStanR` and `instantiate`. See https://wlandau.github.io/instantiate/ for installations instructions.
+
+One `CmdStanR` and `instantiate` are installed, use the following to install `ltjmm`:
 
 ```r
 install.packages("devtools")
