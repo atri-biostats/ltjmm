@@ -6,7 +6,7 @@ Diseases that progress over long periods of time are often studied by observing 
 
 The `ltjmm` package requires `CmdStanR` and `instantiate`. See https://wlandau.github.io/instantiate/ for installations instructions.
 
-One `CmdStanR` and `instantiate` are installed, use the following to install `ltjmm`:
+Once `CmdStanR` and `instantiate` are installed, use the following to install `ltjmm`:
 
 ```r
 install.packages("devtools")
