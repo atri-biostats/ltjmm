@@ -56,17 +56,20 @@
 </h1></div>
 <p>Diseases that progress over long periods of time are often studied by observing cohorts at different stages of disease for shorter periods of time. We apply MCMC sampling to estimate Latent Time Joint Mixed Effect Models (LTJMM) from short-term observations with unknown relative observation times. The LTJMM is described in <a href="https://doi.org/10.1177/0962280217737566" class="external-link">Li, et al. (2017)</a>.</p>
 <div class="section level2">
-<h2 id="to-install-from-an-r-prompt">To install, from an R prompt:<a class="anchor" aria-label="anchor" href="#to-install-from-an-r-prompt"></a>
+<h2 id="installing-ltjmm">Installing <code>ltjmm</code>
+<a class="anchor" aria-label="anchor" href="#installing-ltjmm"></a>
 </h2>
+<p>The <code>ltjmm</code> package requires <code>CmdStanR</code> and <code>instantiate</code>. See <a href="https://wlandau.github.io/instantiate/" class="external-link uri">https://wlandau.github.io/instantiate/</a> for installations instructions.</p>
+<p>Once <code>CmdStanR</code> and <code>instantiate</code> are installed, use the following to install <code>ltjmm</code>:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"devtools"</span><span class="op">)</span></span>
-<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"atrihub/ltjmm"</span>, build_vignettes <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"atri-biostats/ltjmm"</span>, build_vignettes <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="model-details">Model details<a class="anchor" aria-label="anchor" href="#model-details"></a>
 </h2>
-<p>The Stan code for LTJMMs is located in the <code>src/stan_files</code> subdirectory of this repository. All of the models implemented in this package are restricted to have a random intercept and slope for each outcome, the same fixed effect covariates for each outcome, and Gaussian residuals with identity link function.</p>
-<p>The <code><a href="reference/ltjmm_stan.html">ltjmm::ltjmm_stan</a></code> function can fit models with or without a latent time parameter (<code>lt=TRUE</code> or <code>lt=FALSE</code>). With <code>lt=FALSE</code> the model is a joint (or multivariate) mixed effect model. One can assume all of the random effects are from one multivariate Gaussian distribution (<code>random_effects='multivariate'</code>) or each random effect is from separate univariate Gaussian distributions (<code>random_effects='univariate'</code>).</p>
+<p>The Stan code for LTJMMs is located in the <code>src/stan</code> directory of this repository. All of the models implemented in this package are restricted to have a random intercept and slope for each outcome, the same fixed effect covariates for each outcome, and Gaussian residuals with identity link function.</p>
+<p>The <code><a href="reference/ltjmm_stan.html">ltjmm::ltjmm_stan</a></code> function can fit models with or without a latent time parameter (<code>lt=TRUE</code> or <code>lt=FALSE</code>). With <code>lt=FALSE</code> the model is a joint (or multi-outcome) mixed effect model. One can assume all of the random effects are from one multivariate Gaussian distribution (<code>random_effects='multivariate'</code>) or each random effect is from separate univariate Gaussian distributions (<code>random_effects='univariate'</code>).</p>
 <p>Our fork of the <a href="https://github.com/mcdonohue/rstanarm" class="external-link"><code>rstanarm</code></a> repository includes a function <code>stan_ltjmm</code>, which allows different random effects, fixed effects, and exponential family links/distributions for up to 20 outcomes.</p>
 </div>
 <div class="section level2">
