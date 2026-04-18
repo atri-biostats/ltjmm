@@ -1,94 +1,96 @@
 // LTJMM with univariate normal distributions on random effects
+data {
+  int<lower=1> N_obs;                 // Number of observations
+  int<lower=1> N_sub;                 // Number of subjects
+  int<lower=2> N_out;                 // Number of outcomes
 
-data{
-	// Define variables in data
-	int<lower=0> N_obs;              // Number of observations
-	int<lower=0, upper=N_obs> N_sub; // Number of subjects
-	int<lower=0, upper=N_obs> N_out; // Number of outcomes
+  int<lower=1> N_X;                
+  matrix[N_obs, N_X] X;               // Fixed effects design matrix
 
-	int<lower=0> N_X;                
-	matrix[N_obs, N_X] X;            // fixed effects
+  vector[N_obs] y;                    // Outcome
+  vector[N_obs] obs_time;             // Observation times (preferably centered)
 
-	vector[N_obs] y;                 // outcome
-	vector[N_obs] obs_time;          // observation times
-  
-	array[N_obs] int<lower=1, upper=N_out> outcome;      // Outcome index
-	array[N_obs] int<lower=1, upper=N_sub> subject;      // Subject index
+  array[N_obs] int<lower=1, upper=N_out> outcome;   // Outcome index
+  array[N_obs] int<lower=1, upper=N_sub> subject;   // Subject index
 }
 
-parameters{
-	matrix[N_out, N_X] beta;        // parameter vector of observed covariates
-	vector[N_sub] delta;            // time shift random effect: normally distributed with mean 0
-	vector<lower=0>[N_out] gamma;   // restrict gamma to be positive for identifiability
-	vector<lower=0>[N_out] sigma_y; // population standard deviation 
-	real<lower=0> sigma_delta;      // standard deviation of time shift random effect
- 
-	matrix[N_sub, N_out] alpha1;        // random slopes
-	matrix[N_sub, N_out-1] alpha0_raw;  // random intercepts 
- 
-	vector<lower=0>[N_out] sigma_alpha1;    // standard deviation of random slopes
-	vector<lower=0>[N_out-1] sigma_alpha0;  // standard deviation of random intercepts
+parameters {
+  // Fixed effects
+  matrix[N_out, N_X] beta;
+
+  // Global time-shift random effect (non-centered)
+  vector[N_sub] delta_raw;
+  real<lower=0> sigma_delta;
+
+  // Outcome-specific slopes and residual SDs
+  vector<lower=0>[N_out] gamma;
+  vector<lower=0>[N_out] sigma_y;
+
+  // Random intercepts (sum-to-zero across outcomes)
+  matrix[N_sub, N_out - 1] alpha0_raw;
+  vector<lower=0>[N_out - 1] sigma_alpha0;
+
+  // Random slopes (non-centered)
+  matrix[N_sub, N_out] alpha1_raw;
+  vector<lower=0>[N_out] sigma_alpha1;
 }
 
-transformed parameters{
-	matrix[N_sub, N_out] alpha0;
+transformed parameters {
+  // Non-centered transformations
+  vector[N_sub] delta = sigma_delta * delta_raw;
 
-	matrix[N_obs, N_X] beta_aug;
-	vector[N_obs] gamma_aug;
-	vector[N_obs] delta_aug;
-	vector[N_obs] alpha0_aug;
-	vector[N_obs] alpha1_aug;
-	vector[N_obs] sigma_y_aug;
-	vector[N_obs] mu;
-   
-	// Sum-to-zero constraint for subject-specific random intercepts over outcomes
-	for(n_sub in 1:N_sub){
-		for(n_out in 1:(N_out-1)){
-			alpha0[n_sub, n_out] = alpha0_raw[n_sub, n_out];
-		}
-		alpha0[n_sub, N_out] = -sum(alpha0_raw[n_sub,]);
-	}  
+  matrix[N_sub, N_out] alpha1 =
+    diag_post_multiply(alpha1_raw, sigma_alpha1);
 
-	for(n_obs in 1:N_obs){ 
-		beta_aug[n_obs] = beta[outcome[n_obs]];
-		gamma_aug[n_obs] = gamma[outcome[n_obs]];
-		delta_aug[n_obs] = delta[subject[n_obs]];
-		alpha1_aug[n_obs] = alpha1[subject[n_obs], outcome[n_obs]];
-		alpha0_aug[n_obs] = alpha0[subject[n_obs], outcome[n_obs]];    
-		sigma_y_aug[n_obs] = sigma_y[outcome[n_obs]];
-		mu[n_obs] = dot_product(X[n_obs], beta_aug[n_obs]) + gamma_aug[n_obs] * (obs_time[n_obs] + delta_aug[n_obs]) + alpha0_aug[n_obs] + alpha1_aug[n_obs] * obs_time[n_obs];
-	}
+  matrix[N_sub, N_out] alpha0;
+
+  vector[N_obs] mu;
+
+  // Sum-to-zero constraint for random intercepts
+  for (s in 1:N_sub) {
+    for (j in 1:(N_out - 1))
+      alpha0[s, j] = sigma_alpha0[j] * alpha0_raw[s, j];
+
+    alpha0[s, N_out] = -sum(alpha0[s, 1:(N_out - 1)]);
+  }
+
+  // Linear predictor
+  for (n in 1:N_obs) {
+    int j = outcome[n];
+    int s = subject[n];
+
+    mu[n] =
+      dot_product(X[n], beta[j]) +
+      gamma[j] * (obs_time[n] + delta[s]) +
+      alpha0[s, j] +
+      alpha1[s, j] * obs_time[n];
+  }
 }
 
-model{	
-	// Priors
-	gamma ~ cauchy(0, 2.5);
-	sigma_delta ~ cauchy(0, 2.5);
-	sigma_y ~ cauchy(0, 2.5);
-	sigma_alpha0 ~ cauchy(0, 2.5);
-	sigma_alpha1 ~ cauchy(0, 2.5);
-	
-	for(n_out in 1:(N_out-1)){
-		alpha0_raw[,n_out] ~ normal(0, sigma_alpha0[n_out]);
-	}
-	  
-	for(n_out in 1:N_out){
-		beta[n_out] ~ normal(0, 10.0);
-		alpha1[,n_out] ~ normal(0, sigma_alpha1[n_out]);
-	}
-  
-	delta ~ normal(0, sigma_delta);
+model {
+  // Priors
+  to_vector(beta) ~ normal(0, 10);
 
-	// Likelihood
-	for(n_obs in 1:N_obs){
-		y[n_obs] ~ normal(mu[n_obs], sigma_y_aug[n_obs]);
-	} 
+  delta_raw ~ normal(0, 1);
+  sigma_delta ~ normal(0, 1);
+
+  gamma ~ normal(0, 1);
+  sigma_y ~ normal(0, 1);
+
+  to_vector(alpha0_raw) ~ normal(0, 1);
+  sigma_alpha0 ~ normal(0, 1);
+
+  to_vector(alpha1_raw) ~ normal(0, 1);
+  sigma_alpha1 ~ normal(0, 1);
+
+  // Likelihood (vectorized)
+  y ~ normal(mu, sigma_y[outcome]);
 }
 
-generated quantities{
-	// log_likelihood (observations)
-	vector[N_obs] log_lik;
-	for(n_obs in 1:N_obs){
-		log_lik[n_obs] = normal_lpdf(y[n_obs] | mu[n_obs], sigma_y_aug[n_obs]);
-	}
+generated quantities {
+  vector[N_obs] log_lik;
+
+  for (n in 1:N_obs) {
+    log_lik[n] = normal_lpdf(y[n] | mu[n], sigma_y[outcome[n]]);
+  }
 }

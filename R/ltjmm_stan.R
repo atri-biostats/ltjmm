@@ -9,7 +9,7 @@
 #' specifies that random intercepts and slopes for each outcome follow univariate independent normal distributions.
 #' Option 'multivariate' specifies that random intercepts and slopes follow a single multivariate normal distribution.
 #' Option 'multivariate_no_constraint' with \code{lt=TRUE} relaxes the sum-to-zero constraint described in
-#' Li et al. 2017.
+#' Li et al. 2017. Option 'none' drops random intercepts and slopes from the model.
 #' @param data data.frame containing the variables in the model.
 #' @param subset an optional vector specifying a subset of observations to be used in the fitting process.
 #' @param na.action a function which indicates what should happen when the data contain NAs.
@@ -29,6 +29,8 @@ ltjmm_stan <- function(formula, lt=TRUE, random_effects='univariate', data, subs
     instantiate::stan_package_model(name = "mm", package = "ltjmm")
   if(!lt & random_effects == 'multivariate') mod <- 
     instantiate::stan_package_model(name = "jmm_mvnorm_ranef", package = "ltjmm")
+  if(random_effects == 'none') mod <- 
+      instantiate::stan_package_model(name = "ltjmm_no_ranef", package = "ltjmm")
   if(is.null(mod)) stop('Invalid specification for lt and/or random_effects.')
   out <- mod$sample(data = ltjmm(formula, data, subset, na.action)$data, ...)
   return(out)

@@ -4,25 +4,16 @@
 \alias{setup.predict.ltjmm}
 \title{Create design matrices and extract parameter estimates to obtain predictions and confidence intervals for LTJMMs}
 \usage{
-setup.predict.ltjmm(
-  object,
-  stanfit.object,
-  newdata,
-  link,
-  chains = NULL,
-  level = 0.95
-)
+setup.predict.ltjmm(object, stanfit.object, newdata, link, level = 0.95)
 }
 \arguments{
 \item{object}{a \code{\link[ltjmm]{ltjmm}} object}
 
-\item{stanfit.object}{a corresponding \code{\link[rstan]{stanfit}} object}
+\item{stanfit.object}{a corresponding \code{\link[cmdstanr]{CmdStanMCMC}} object}
 
 \item{newdata}{new data on which to generate predictions}
 
 \item{link}{link function (defaults to identity)}
-
-\item{chains}{number of MCMC chains.}
 
 \item{level}{for credible intervals}
 }

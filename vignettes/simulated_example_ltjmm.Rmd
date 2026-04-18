@@ -332,6 +332,55 @@ ggplot(pd, aes(x=truth, y=posterior.mean)) +
   geom_abline(intercept=0, slope=1) + facet_wrap(~outcome, scales='free')
 ```
 
+
+# Fit LTJMM with no random effects with Stan
+```{r stanFitNone, eval=FALSE}
+fit <- ltjmm_stan(Y ~ year |
+    1  | # fixed effects direct on outcome
+    id | outcome,
+  random_effects = "none",
+  data = dd,
+  seed = rng_seed,
+  chains = 2, parallel_chains = 2,
+  iter_warmup = 500, iter_sampling = 500, thin = 2)
+# fit$save_object(file = 'sim_lt_no_ranef_results.RDS')
+fit.sum <- fit$summary(c("beta", "gamma", "sigma_delta", "delta")) %>%
+  as.data.frame()
+row.names(fit.sum) <- fit.sum %>% pull(variable)
+draws.beta <- fit$draws("beta")
+draws.gamma <- fit$draws("gamma")
+draws.sigma_delta <- fit$draws("sigma_delta")
+save(fit.sum, draws.beta, draws.gamma, draws.sigma_delta, 
+  file = 'sim_lt_no_ranef_results.rdata')
+```
+
+```{r loadResultsNone}
+load(system.file("testdata", "sim_lt_no_ranef_results.rdata", package="ltjmm"))
+```
+
+## Diagnostic plots
+```{r traceplotBetaNone}
+mcmc_trace(draws.beta)
+```
+
+```{r traceplotGammaNone}
+mcmc_trace(draws.gamma)
+```
+
+## True versus posterior mean of latent time shifts
+```{r biasDeltaPlotNone}
+delta <- simulated_ltjmm$delta
+delta.posteriormean <- fit.sum %>% filter(grepl('delta', variable)) %>% 
+  filter(variable != 'sigma_delta') %>%
+  pull(mean)
+par(mgp = c(2.2, 0.45, 0), tcl = -0.4, mar = c(3.3, 3.6, 1.1, 1.1))
+plot(delta, delta.posteriormean,
+  xlim = range(delta), ylim = range(delta), 
+  xlab = expression(paste("True value of time shift ", delta[i])),
+  ylab = expression(paste("Posterior mean of time shift ", delta[i])))
+abline(0, 1, lwd=2, col='red', lty = 2)
+```
+
 # Fit joint mixed effect model (JMM) with multivariate random effects with Stan
 ```{r stanFitJMM, eval=FALSE}
 fit <- ltjmm_stan(Y ~ year |
@@ -435,3 +484,4 @@ ggplot(pd, aes(x=truth, y=posterior.mean)) +
   geom_point(aes(shape=parameter, color=parameter), alpha=0.25) +
   geom_abline(intercept=0, slope=1) + facet_wrap(~outcome, scales='free')
 ```
+

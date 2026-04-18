@@ -9,7 +9,6 @@
   stanfit.object,
   newdata,
   link,
-  chains = NULL,
   level = 0.95,
   grouping = c("population", "subject")[1],
   ...
@@ -18,13 +17,11 @@
 \arguments{
 \item{object}{a \code{\link[ltjmm]{ltjmm}} object}
 
-\item{stanfit.object}{a corresponding \code{\link[rstan]{stanfit}} object}
+\item{stanfit.object}{a corresponding \code{\link[cmdstanr]{CmdStanMCMC}} object}
 
 \item{newdata}{new data on which to generate predictions}
 
 \item{link}{link function (defaults to identity)}
-
-\item{chains}{number of MCMC chains.}
 
 \item{level}{for credible intervals}
 

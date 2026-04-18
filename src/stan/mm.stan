@@ -1,74 +1,79 @@
-// Stacked mixed model with independent normal distributions on random effects
+// Stacked mixed model with independent normal random effects
+data {
+  int<lower=1> N_obs;
+  int<lower=1> N_sub;
+  int<lower=1> N_out;
 
-data{
-	// Define variables in data
-	int<lower=0> N_obs;              // Number of observations
-	int<lower=0, upper=N_obs> N_sub; // Number of subjects
-	int<lower=0, upper=N_obs> N_out; // Number of outcomes
+  int<lower=1> N_X;
+  matrix[N_obs, N_X] X;            // includes intercept if desired
 
-	int<lower=0> N_X;                
-	matrix[N_obs, N_X] X;            // fixed effects
+  vector[N_obs] y;
+  vector[N_obs] obs_time;          // should be centered in preprocessing
 
-	vector[N_obs] y;                 // outcome
-	vector[N_obs] obs_time;          // observation times
-  
-	array[N_obs] int<lower=1, upper=N_out> outcome;      // Outcome index
-	array[N_obs] int<lower=1, upper=N_sub> subject;      // Subject index
+  array[N_obs] int<lower=1, upper=N_out> outcome;
+  array[N_obs] int<lower=1, upper=N_sub> subject;
 }
 
-parameters{
-	matrix[N_out, N_X] beta;        // parameter vector of observed covariates
-	vector[N_out] gamma;
-	vector<lower=0>[N_out] sigma_y; // population standard deviation 
- 
-	matrix[N_sub, N_out] alpha1;        // random slopes
-	matrix[N_sub, N_out] alpha0;        // random intercepts 
- 
-	vector<lower=0>[N_out] sigma_alpha1;    // standard deviation of random slopes
-	vector<lower=0>[N_out] sigma_alpha0;    // standard deviation of random intercepts
+parameters {
+  // Fixed effects
+  matrix[N_out, N_X] beta;
+  vector[N_out] gamma;
+  vector<lower=0>[N_out] sigma_y;
+
+  // Non-centered random intercepts
+  matrix[N_sub, N_out] alpha0_raw;
+  vector<lower=0>[N_out] sigma_alpha0;
+
+  // Non-centered random slopes
+  matrix[N_sub, N_out] alpha1_raw;
+  vector<lower=0>[N_out] sigma_alpha1;
 }
 
-transformed parameters{
-	matrix[N_obs, N_X] beta_aug;
-	vector[N_obs] gamma_aug;
-	vector[N_obs] alpha0_aug;
-	vector[N_obs] alpha1_aug;
-	vector[N_obs] sigma_y_aug;
-	vector[N_obs] mu;
+transformed parameters {
+  matrix[N_sub, N_out] alpha0;
+  matrix[N_sub, N_out] alpha1;
+  vector[N_obs] mu;
 
-	for(n_obs in 1:N_obs){ 
-		beta_aug[n_obs] = beta[outcome[n_obs]];
-		gamma_aug[n_obs] = gamma[outcome[n_obs]];
-		alpha1_aug[n_obs] = alpha1[subject[n_obs], outcome[n_obs]];
-		alpha0_aug[n_obs] = alpha0[subject[n_obs], outcome[n_obs]];    
-		sigma_y_aug[n_obs] = sigma_y[outcome[n_obs]];
-		mu[n_obs] = dot_product(X[n_obs], beta_aug[n_obs]) + gamma_aug[n_obs] * obs_time[n_obs] + alpha0_aug[n_obs] + alpha1_aug[n_obs] * obs_time[n_obs];
-	}
+  // Non-centered transforms
+  for (j in 1:N_out) {
+    alpha0[, j] = sigma_alpha0[j] * alpha0_raw[, j];
+    alpha1[, j] = sigma_alpha1[j] * alpha1_raw[, j];
+  }
+
+  // Linear predictor
+  for (n in 1:N_obs) {
+    int j = outcome[n];
+    int s = subject[n];
+
+    mu[n] =
+      dot_product(X[n], beta[j]) +
+      gamma[j] * obs_time[n] +
+      alpha0[s, j] +
+      alpha1[s, j] * obs_time[n];
+  }
 }
 
-model{	
-	// Priors
-	gamma ~ cauchy(0, 2.5);
-	sigma_y ~ cauchy(0, 2.5);
-	sigma_alpha0 ~ cauchy(0, 2.5);
-	sigma_alpha1 ~ cauchy(0, 2.5);
-	  
-	for(n_out in 1:N_out){
-		beta[n_out] ~ normal(0, 10.0);
-		alpha0[,n_out] ~ normal(0, sigma_alpha0[n_out]);
-		alpha1[,n_out] ~ normal(0, sigma_alpha1[n_out]);
-	}
+model {
+  // Priors
+  to_vector(beta) ~ normal(0, 10);
+  gamma ~ normal(0, 1);
 
-	// Likelihood
-	for(n_obs in 1:N_obs){
-		y[n_obs] ~ normal(mu[n_obs], sigma_y_aug[n_obs]);
-	} 
+  to_vector(alpha0_raw) ~ normal(0, 1);
+  to_vector(alpha1_raw) ~ normal(0, 1);
+
+  sigma_alpha0 ~ normal(0, 1);
+  sigma_alpha1 ~ normal(0, 1);
+  sigma_y ~ normal(0, 1);
+
+  // Likelihood (vectorized)
+  y ~ normal(mu, sigma_y[outcome]);
 }
 
-generated quantities{
-	vector[N_obs] log_lik;           
-	// log_likelihood (observations)
-	for(n_obs in 1:N_obs){
-		log_lik[n_obs] = normal_lpdf(y[n_obs] | mu[n_obs], sigma_y_aug[n_obs]);
-	}
+generated quantities {
+  vector[N_obs] log_lik;
+
+  // Pointwise log-likelihood for LOO / WAIC
+  for (n in 1:N_obs) {
+    log_lik[n] = normal_lpdf(y[n] | mu[n], sigma_y[outcome[n]]);
+  }
 }

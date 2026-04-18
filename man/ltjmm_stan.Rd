@@ -23,7 +23,9 @@ effects | subject id | outcome id}}
 
 \item{random_effects}{character specifying distribution for random intercepts and slopes. Option 'univariate' 
 specifies that random intercepts and slopes for each outcome follow univariate independent normal distributions.
-Option 'multivariate' specifies that random intercepts and slopes follow a single mutilvariate normal distribution.)}
+Option 'multivariate' specifies that random intercepts and slopes follow a single multivariate normal distribution.
+Option 'multivariate_no_constraint' with \code{lt=TRUE} relaxes the sum-to-zero constraint described in
+Li et al. 2017. Option 'none' drops random intercepts and slopes from the model.}
 
 \item{data}{data.frame containing the variables in the model.}
 
